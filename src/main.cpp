@@ -6,7 +6,6 @@
 //TO DO: ADD extra stuffs??
 
 
-//THIS IS A TEST CHANGE
 #include <Arduino.h>          // Core framework for GPIO and interrupts
 #include <Wire.h>             // Built-in I2C master driver 
 #include <LiquidCrystal.h> // For LCD display
