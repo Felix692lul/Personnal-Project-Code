@@ -1,6 +1,6 @@
 //TO DO: Create different positions for when the character jump and runs
-//TO DO: Create obstacles for the character to jump over
 //TO DO: Create a scoring system for the game
+//TO DO: Add obstacles for the character to jump over
 //TO DO: Create a game over screen for when the character hits an obstacle
 //TO DO: Create a dark mode for the game, when the score is high
 //TO DO: ADD extra stuffs??
@@ -20,9 +20,16 @@ const int d7 = 16;
 int button = 27;
 int LDR = 34;
 
+//Global Variables:
+unsigned long previousGameMillis = 0; //Store the last time the display was updated
+unsigned long previousObstacleMillis = 0; //Store the last time an obstacle was created
+
+const long gameSpeed = 150; //Set the speed of the game
+const long gameObstacleInterval = 1000; //Set at which interval the obstacles will appear
+
 LiquidCrystal GameDisplay(rs, e, d4, d5, d6, d7); //Create a digital manager for my display and which physical ESP32 wires it must use to send data
                                                   //Gamedisplay refers to the LCD
-
+                                                                                                                                      
 byte character[8] = { //Creates an index and tells the LCD which pixel to light up in the first column, bottom rectangle
   B01110,
   B01110,
@@ -34,6 +41,7 @@ byte character[8] = { //Creates an index and tells the LCD which pixel to light 
   B01010,
 };
 
+byte groundRow[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //From left to right, 0 is nothing and 1 is obstacles
 
 //Functions:
 enum GameMenu{
@@ -58,4 +66,15 @@ void loop() {
   GameDisplay.setCursor(0, 1); //set the cursor to column 0, row 1
   GameDisplay.write(byte(0)); //print my character to the display
 
+  unsigned long currentMillis = millis(); //Store the current time in a variable
+ if(currentMillis - previousObstacleMillis >= gameObstacleInterval){ //compares the current time to the last time an obstacle was created
+  previousObstacleMillis = currentMillis; //update the last time an obstacle was created to the current time
+   
+  
+ for(int i = 0; i < 15; i++){
+  
+ 
+
+}
+}
 }
