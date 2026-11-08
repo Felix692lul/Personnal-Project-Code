@@ -1,5 +1,5 @@
 //TO DO: Create a scoring system for the game
-//TO DO: Create a game over screen for when the character hits an obstacle
+//TO DO: REPLACE ALL THE DIGITALREAD(BUTTON WITH A GLOBAL VARIABLE!?)
 //TO DO: Create a dark mode for the game, when the score is high
 
 //Common mistakes:
@@ -60,12 +60,12 @@ enum GameMenu{
 
 GameMenu InitialState = Menu; //Set the current state of the game to Menu
 
-
 void setup() {
   GameDisplay.begin(16, 2); //Initialize the display with 16 columns and 2 rows
   GameDisplay.createChar(0, character);  //save the character design using this function
 
   pinMode(button, INPUT); //Set the button pin to input modes
+  
   
 }
 
@@ -88,6 +88,7 @@ void GameState(){
       }
      GameDisplay.clear(); //Clear the LCD before starting the minigame
      InitialState = Playing; 
+    }
     }
 break;
 
@@ -148,15 +149,37 @@ break;
       GameDisplay.write(byte(0)); 
       }
 
+if(!isJumping && groundRow[0] == 1 ){ //character collision logic
+GameDisplay.clear(); //Clear the LCD before showing the GameOver
+GameDisplay.setCursor(3,0); //Sets the cursor to column 7, row 0
+GameDisplay.print("Game Over!");
+GameDisplay.setCursor(0,1); //Sets the cursor to column 7, row 1
+GameDisplay.print("Press to start");
+InitialState = ded;
 
+}
 break;
 }
 
     case ded:{
-    // TO DO: Print "Game Over! Score: X"
-    // Read button press: if pressed, clear the array and change InitialState = Playing;
-    break;
-  }
-  }
-  }
+    if(digitalRead(button) == HIGH){
+      while(digitalRead(button) == HIGH){ // Wait for button release to avoid bouncing issues
+      }
+      for(int i = 15; i >= 0; i--){ //Clears the array completely
+        groundRow[i] = 0;
+        }
+        previousObstacleMillis = millis(); //refresh the old obstacle timer 
+        isJumping = false; //Sets the jump to false
+
+
+      GameDisplay.clear();
+      InitialState = Playing;
+      
+
+    
 }
+  break;
+  }
+  }
+  }
+
