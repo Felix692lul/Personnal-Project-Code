@@ -1,4 +1,3 @@
-//TO DO: Create a scoring system for the game
 //TO DO: REPLACE ALL THE DIGITALREAD(BUTTON WITH A GLOBAL VARIABLE!?)
 //TO DO: Create a dark mode for the game, when the score is high
 
@@ -6,6 +5,8 @@
 //Using buttonState as a variable in gameState function when it can only be seen by void setup function
 //Not adding curly brackets after declaring calling an enum using case in the switch state
 //Not telling where to print the text to the LCD in case Menu
+//lastdebouncetime never reset to the current time
+
 
 
 #include <Arduino.h>          // Core framework for GPIO and interrupts
@@ -29,8 +30,11 @@ unsigned long TimePassedSinceJump = 0; //Variable to track the time since the ch
 int lastbuttonstate = HIGH;
 int lastdebouncetime = 0;
 const unsigned long DEBOUNCE_TIME = 50; 
+unsigned long lastscoreupdate = 0;
+unsigned long currentscore = 0;
+const long scoreupdateinterval = 500;
 
-const long gameSpeed = 150; //Set the speed of the game
+const long gameSpeed = 150; //Set the speed of the game, FIND A WAY TO IMPLEMENT!!???
 const long gameObstacleInterval = 1000; //Set at which interval the obstacles will appear
 
 LiquidCrystal GameDisplay(rs, e, d4, d5, d6, d7); //Create a digital manager for my display and which physical ESP32 wires it must use to send data
@@ -83,16 +87,17 @@ void GameState(){
     GameDisplay.print("start :D");
 
     if(digitalRead(button) == HIGH){
-      while(digitalRead(button) == HIGH){
-        // Wait for button release to avoid bouncing issues
-      }
      GameDisplay.clear(); //Clear the LCD before starting the minigame
-     InitialState = Playing; 
-    }
+     currentscore = 0; 
+     InitialState = Playing;
+     
+      }
     }
 break;
 
     case Playing:{
+
+    //OBSTACLES LOGIC
     unsigned long currentMillis = millis(); //Store the current time in a variable
     if(currentMillis - previousObstacleMillis >= gameObstacleInterval){ //compares the current time to the last time an obstacle was created
      previousObstacleMillis = currentMillis; //update the last time an obstacle was created to the current time
@@ -118,19 +123,9 @@ break;
        GameDisplay.print(" "); // Clear old trail
     }
     }
-
-    int currentbuttonstate = digitalRead(button);//Read the button and store it
-    if(currentbuttonstate != lastbuttonstate && (millis()-lastdebouncetime > DEBOUNCE_TIME)){ 
-    lastdebouncetime = millis();
-    lastbuttonstate = currentbuttonstate;
-
-    if(currentbuttonstate == HIGH && !isJumping){
-      isJumping = true; //Set the jumping mechanic to true
-      TimePassedSinceJump = millis();
-      }
-    }
-
-    if(isJumping && (millis() - TimePassedSinceJump) >= 2000){ //If the character is in the air and 500ms has passed since the jump
+    
+    //CHARACTER JUMPING LOGIC
+    if(isJumping && (millis() - TimePassedSinceJump) >= 2000){ //If the character is in the air and 2 sec has passed since the jump
       isJumping = false; //Set the jumping mechanic to false
 
     }
@@ -149,15 +144,41 @@ break;
       GameDisplay.write(byte(0)); 
       }
 
-if(!isJumping && groundRow[0] == 1 ){ //character collision logic
+    //BUTTON DEBOUNCING LOGIC
+    int currentbuttonstate = digitalRead(button);//Read the button and store it
+    if(currentbuttonstate != lastbuttonstate && (millis()-lastdebouncetime > DEBOUNCE_TIME)){ 
+    lastdebouncetime = millis();
+    lastbuttonstate = currentbuttonstate;
+
+    if(currentbuttonstate == HIGH && !isJumping){
+      isJumping = true; //Set the jumping mechanic to true
+      TimePassedSinceJump = millis();
+      }
+    }      
+
+
+//SCORE SYSTEM LOGIC
+unsigned long currentTime = millis();
+if(currentTime - lastscoreupdate >= scoreupdateinterval){
+currentscore++; //Increments the score!!
+lastscoreupdate = currentTime; //Update the last score time
+
+GameDisplay.setCursor(10,0); //Set cursor column 10, row 0
+GameDisplay.print("Sc:");
+GameDisplay.print(currentscore);
+
+}      
+
+//CHARACTER COLLISION LOGIC+GAME OVER SCREEN
+if(!isJumping && groundRow[0] == 1 ){ 
 GameDisplay.clear(); //Clear the LCD before showing the GameOver
 GameDisplay.setCursor(3,0); //Sets the cursor to column 7, row 0
 GameDisplay.print("Game Over!");
 GameDisplay.setCursor(0,1); //Sets the cursor to column 7, row 1
 GameDisplay.print("Press to start");
 InitialState = ded;
-
 }
+
 break;
 }
 
@@ -169,11 +190,13 @@ break;
         groundRow[i] = 0;
         }
         previousObstacleMillis = millis(); //refresh the old obstacle timer 
-        isJumping = false; //Sets the jump to false
+        isJumping = false; //Sets the jump to false so character doesn't stay in the air
 
 
+      currentscore = 0;
       GameDisplay.clear();
       InitialState = Playing;
+
       
 
     
