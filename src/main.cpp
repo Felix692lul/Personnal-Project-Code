@@ -1,6 +1,3 @@
-//TO DO: REPLACE ALL THE DIGITALREAD(BUTTON WITH A GLOBAL VARIABLE!?)
-//TO DO: Create a dark mode for the game, when the score is high
-
 //Common mistakes:
 //Using buttonState as a variable in gameState function when it can only be seen by void setup function
 //Not adding curly brackets after declaring calling an enum using case in the switch state
@@ -24,6 +21,7 @@ int button = 27;
 int LDR = 34;
 
 //Global Variables:
+int readButton = LOW;
 unsigned long previousObstacleMillis = 0; //Store the last time an obstacle was created
 bool isJumping = false; //Variable for the character jumping mechanic
 unsigned long TimePassedSinceJump = 0; //Variable to track the time since the character last jumped
@@ -34,7 +32,7 @@ unsigned long lastscoreupdate = 0;
 unsigned long currentscore = 0;
 const long scoreupdateinterval = 500;
 
-const long gameSpeed = 150; //Set the speed of the game, FIND A WAY TO IMPLEMENT!!???
+const long gameSpeed = 150; //Set the speed of the game
 const long gameObstacleInterval = 1000; //Set at which interval the obstacles will appear
 
 LiquidCrystal GameDisplay(rs, e, d4, d5, d6, d7); //Create a digital manager for my display and which physical ESP32 wires it must use to send data
@@ -53,13 +51,12 @@ byte character[8] = { //Creates an index and tells the LCD which pixel to light 
 
 byte groundRow[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //From left to right, 0 is nothing and 1 is obstacles
 
+
 //Global constants and Enums
 enum GameMenu{
  Menu,
  Playing,
  ded
-
-
 };
 
 GameMenu InitialState = Menu; //Set the current state of the game to Menu
@@ -75,6 +72,7 @@ void setup() {
 
 void loop() {
   GameState(); //Handle the GameState function continiously
+  readButton = digitalRead(button);
 }
 
 void GameState(){
@@ -86,11 +84,10 @@ void GameState(){
     GameDisplay.setCursor(0,1); //Places cursor at row 1, column 0
     GameDisplay.print("start :D");
 
-    if(digitalRead(button) == HIGH){
+    if(readButton == HIGH){
      GameDisplay.clear(); //Clear the LCD before starting the minigame
      currentscore = 0; 
      InitialState = Playing;
-     
       }
     }
 break;
@@ -101,15 +98,15 @@ break;
     unsigned long currentMillis = millis(); //Store the current time in a variable
     if(currentMillis - previousObstacleMillis >= gameObstacleInterval){ //compares the current time to the last time an obstacle was created
      previousObstacleMillis = currentMillis; //update the last time an obstacle was created to the current time
-   
-  
+    
+      
     for(int i = 0; i < 15; i++){
      groundRow[i] = groundRow[i + 1]; //Shift the obstacles to the left by one column
                                       //If Row 15 is left alone, it duplicates whatever nb next to it
    
     }
-    if (random(0, 100) < 20) { //check any nb from 0 to 19, if any number between these 2 or any of those 2 are picked, spawn at obstacle(20% basically)
-     groundRow[15] = 1; 
+    if (random(0, 100) < 35 && groundRow[14] == 0) { //check any nb from 0 to 19, if any number between these 2 or any of those 2 are picked, spawn at obstacle(20% basically)
+     groundRow[15] = 1;                              //Prevents two ** from appearing
     } else {
      groundRow[15] = 0;
     }
@@ -163,7 +160,7 @@ if(currentTime - lastscoreupdate >= scoreupdateinterval){
 currentscore++; //Increments the score!!
 lastscoreupdate = currentTime; //Update the last score time
 
-GameDisplay.setCursor(10,0); //Set cursor column 10, row 0
+GameDisplay.setCursor(10,0); //Set cursor column 11, row 0
 GameDisplay.print("Sc:");
 GameDisplay.print(currentscore);
 
@@ -183,7 +180,7 @@ break;
 }
 
     case ded:{
-    if(digitalRead(button) == HIGH){
+    if(readButton == HIGH){
       while(digitalRead(button) == HIGH){ // Wait for button release to avoid bouncing issues
       }
       for(int i = 15; i >= 0; i--){ //Clears the array completely
