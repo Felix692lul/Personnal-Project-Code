@@ -35,6 +35,7 @@ unsigned long Charlastposition = 0;
 const long Charpositioninterval = 400;
 byte currentSprite = 0;
 const long gameObstacleInterval = 700; //Set at which interval the obstacles will appear and the speed of the game
+const int GHOST_THRESHOLD = 1500;
 
 LiquidCrystal GameDisplay(rs, e, d4, d5, d6, d7); //Create a digital manager for my display and which physical ESP32 wires it must use to send data
                                                     //Gamedisplay refers to the LCD
@@ -60,6 +61,8 @@ byte character2[8] = { //Character position 2
   B11011,
   B00000,
 };
+
+
 
 byte groundRow[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //From left to right, 0 is nothing and 1 is obstacles
 
@@ -169,31 +172,47 @@ void GameState(){
         }
       }      
 
+      //LDR READING
+      int lightlevel = analogRead(LDR);
+      bool isghost = (lightlevel < GHOST_THRESHOLD);
 
-      //SCORE SYSTEM LOGIC
+  
+      //GHOST MODE INDICATOR+SCORE SYSTEM LOGIC
       unsigned long currentTime = millis();
-      if(currentTime - lastscoreupdate >= scoreupdateinterval){
-        currentscore++; //Increments the score!!
-        lastscoreupdate = currentTime; //Update the last score time
+      if(isghost){
+        GameDisplay.setCursor(8,0);
+        GameDisplay.print("G");
+        GameDisplay.setCursor(10,0);
+        GameDisplay.print("      ");
+        currentscore = 0;
+        lastscoreupdate = currentTime;
+        }else{
+        GameDisplay.setCursor(8,0);
+        GameDisplay.print(" ");
+        if(currentTime - lastscoreupdate >= scoreupdateinterval){
+         currentscore++; //Increments the score!!
+         lastscoreupdate = currentTime; //Update the last score time
 
-        GameDisplay.setCursor(10,0); //Set cursor column 10, row 0
-        GameDisplay.print("Sc:");
-        GameDisplay.print(currentscore);
-      }      
+         GameDisplay.setCursor(10,0); //Set cursor column 10, row 0
+         GameDisplay.print("Sc:");
+         GameDisplay.print(currentscore);
+      }
+      }
 
+        
       //CHARACTER COLLISION LOGIC+GAME OVER SCREEN
-      if(!isJumping && groundRow[0] == 1 ){ 
+      if(!isJumping && groundRow[0] == 1 && !isghost){ 
         GameDisplay.clear(); //Clear the LCD before showing the GameOver
         GameDisplay.setCursor(3,0); //Sets the cursor to column 3, row 0
         GameDisplay.print("Game Over!");
         GameDisplay.setCursor(0,1); //Sets the cursor to column 0, row 1
         GameDisplay.print("Press to start");
         InitialState = ded;
+      }else if (isghost && groundRow[0] == 1){
+        groundRow[0] = 0;
       }
-
-      break;
-    }
-
+     }
+     break;
     case ded:{
       if(readButton == HIGH){
         while(digitalRead(button) == HIGH){ // Wait for button release to avoid bouncing issues
@@ -209,6 +228,7 @@ void GameState(){
         GameDisplay.clear();
         InitialState = Playing;
       }
+
       break;
     }
   }
