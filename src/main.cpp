@@ -26,7 +26,8 @@ unsigned long Charlastposition = 0;
 const long Charpositioninterval = 400;
 byte currentSprite = 0;
 const long gameObstacleInterval = 700; //Set at which interval the obstacles will appear and the speed of the game
-const int GHOST_THRESHOLD = 1500;
+const int GHOST_THRESHOLD = 100;
+
 
 LiquidCrystal GameDisplay(rs, e, d4, d5, d6, d7); //Create a digital manager for my display and which physical ESP32 wires it must use to send data
                                                   //Gamedisplay refers to the LCD
@@ -63,12 +64,14 @@ enum GameMenu {
 };
 
 GameMenu InitialState = Menu; //Set the current state of the game to Menu
+void GameState(); //Declare the GameState function so it can be used in the loop
 
 void setup() {
+  Serial.begin(115200); //Initialize the serial monitor for the LDR threshold
   GameDisplay.begin(16, 2);             //Initialize the display with 16 columns and 2 rows
   GameDisplay.createChar(0, character); //save characters design using this function
   GameDisplay.createChar(1, character2);
-  pinMode(button, INPUT);               //Set the button pin to input modes
+  pinMode(button, INPUT_PULLUP);               //Set the button pin to input modes
 }
 
 void loop() {
@@ -85,9 +88,10 @@ void GameState() {
       GameDisplay.setCursor(0, 1);          //Places cursor at row 1, column 0
       GameDisplay.print("start :D");
 
-      if (readButton == HIGH) {
+      if (readButton == LOW) {
         GameDisplay.clear(); //Clear the LCD before starting the minigame
         currentscore = 0;
+        lastbuttonstate = LOW; //prevents a jump when game starts
         InitialState = Playing;
       }
     }
@@ -151,7 +155,7 @@ void GameState() {
         lastdebouncetime = millis();
         lastbuttonstate = currentbuttonstate;
 
-        if (currentbuttonstate == HIGH && !isJumping) {
+        if (currentbuttonstate == LOW && !isJumping) {
           isJumping = true; //Set the jumping mechanic to true
           TimePassedSinceJump = millis();
         }
@@ -159,6 +163,7 @@ void GameState() {
 
       //LDR READING
       int lightlevel = analogRead(LDR);
+      Serial.println(lightlevel);
       bool isghost = (lightlevel < GHOST_THRESHOLD);
 
       //GHOST MODE INDICATOR+SCORE SYSTEM LOGIC
@@ -199,8 +204,8 @@ void GameState() {
 
     case ded: {
       //restart on a fresh press (prevents skipping Game Over if you died mid-press)
-      if (readButton == HIGH && lastbuttonstate == LOW) {
-        lastbuttonstate = HIGH; // Tells 'Playing' loop that the button is already held down
+      if (readButton == LOW && lastbuttonstate == HIGH) {
+        lastbuttonstate = LOW; // Tells 'Playing' loop that the button is already held down
 
         for (int i = 15; i >= 0; i--) { //Clears the array completely
           groundRow[i] = 0;
